@@ -245,8 +245,7 @@
           alt="Default house preview" />
       {/if}
 
-      <button class="btn btn-teal w-100 fw-bold"
-        style="background: #16a085; color: white;"
+      <button class="btn btn-action-1 w-100 fw-bold"
         on:click={handleBuildClick}
         disabled={isLoading}>
         {isLoading ? 'Generating image...' : 'Build me a house'} <i class="bi bi-arrow-right ms-2"></i>
@@ -254,15 +253,3 @@
     </div>
   </div>
 </div>
-
-<!-- <div class="container">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h4 class="card-title mb-4 text-success fw-bold">House Preview</h4>
-        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" class="img-fluid rounded mb-4" alt="House Preview" />
-        <button class="btn btn-teal w-100 fw-bold" style="background: #16a085; color: white;">
-          Build me a house <i class="bi bi-arrow-right ms-2"></i>
-        </button>
-      </div>
-    </div>
-</div> -->

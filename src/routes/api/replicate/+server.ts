@@ -5,11 +5,11 @@ export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const { prompt } = await request.json();
 
-		console.log('📤 Prompt recebido:', prompt);
+		console.log('📤 Prompt received:', prompt);
 
 		const replicateToken = process.env.REPLICATE_API_TOKEN;
 		if (!replicateToken) {
-			throw new Error('Token ausente no .env');
+			throw new Error('Missing token in .env');
 		}
 
 		const response = await fetch('https://api.replicate.com/v1/predictions', {
@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		const prediction = await response.json();
 
-		console.log('📥 Resposta da Replicate (inicial):', prediction);
+		console.log('📥 Initial Replicate response:', prediction);
 
 		if (!prediction.id) {
 			throw new Error('prediction.id ausente: ' + JSON.stringify(prediction));
@@ -53,16 +53,16 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		if (result.status === 'succeeded' && result.output?.length) {
-			console.log('✅ Imagem gerada:', result.output[0]);
+			console.log('✅ Image generated:', result.output[0]);
 			return new Response(JSON.stringify({ url: result.output[0] }), {
 				status: 200,
 				headers: { 'Content-Type': 'application/json' }
 			});
 		} else {
-			throw new Error('Falha na geração da imagem: ' + JSON.stringify(result));
+			throw new Error('Image generation failed: ' + JSON.stringify(result));
 		}
 	} catch (err) {
-		console.error('🔥 Erro interno no /api/replicate:', err);
+		console.error('🔥 Internal error in /api/replicate:', err);
 		return new Response(JSON.stringify({ message: 'Internal Error' }), {
 			status: 500
 		});
