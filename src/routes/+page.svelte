@@ -1,5 +1,7 @@
 <script>
   import { onMount } from 'svelte';
+  import { generateImage } from '$lib/replicate.ts';
+
   let address = '';
   let map;
   let marker;
@@ -10,6 +12,9 @@
   let occupants = 1;
   let area = 90;
   let renewable = 80;
+  let imageUrl = '';
+  let isLoading = false;
+  let prompt = '';
 
   let climate = {
     temperature: 7.4,
@@ -17,6 +22,17 @@
     humidity: 51,
     rainfall: 402
   };
+
+  async function handleBuildClick() {
+  isLoading = true;
+
+  prompt = `Design a passive solar house with ${occupants} occupants, ${area}m², ${renewable}% renewable energy.
+  Located at latitude ${lat.toFixed(2)}, longitude ${lng.toFixed(2)}.
+  Elevation: ${climate.elevation}m, Temp: ${climate.temperature}°C, Humidity: ${climate.humidity}%.
+  Use locally available materials and eco-friendly design.`;
+
+  imageUrl = await generateImage(prompt);
+}
 
   // Watch for address changes and fetch autocomplete suggestions
   $: if (address && address.length > 2) {
@@ -80,28 +96,18 @@
       });
   }
 
-  onMount(() => {
-    // Load Leaflet CSS
-    const leafletCss = document.createElement('link');
-    leafletCss.rel = 'stylesheet';
-    leafletCss.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(leafletCss);
+  onMount(async () => {
+    const L = await import('leaflet');
+    await import('leaflet/dist/leaflet.css');
 
-    // Load Leaflet JS
-    const leafletScript = document.createElement('script');
-    leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    leafletScript.onload = () => {
-      map = L.map('map').setView([lat, lng], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
+    map = L.map('map').setView([lat, lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-      marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-      marker.on('dragend', onMarkerDrag);
-
-      map.on('click', onMapClick);
-    };
-    document.body.appendChild(leafletScript);
+    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    marker.on('dragend', onMarkerDrag);
+    map.on('click', onMapClick);
   });
 </script>
 
@@ -151,13 +157,13 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h4 class="card-title mb-4 text-success fw-bold">House Parameters</h4>
-          <div class="mb-4">
+          <div>
             <i class="bi bi-person" style="font-size: 1.5rem;"></i>
             <span class="ms-2">Number of Occupants</span>
             <input type="range" min="1" max="10" bind:value={occupants} class="form-range mt-2" />
             <div class="text-end">{occupants}</div>
           </div>
-          <div class="mb-4">
+          <div>
             <i class="bi bi-house-door" style="font-size: 1.5rem;"></i>
             <span class="ms-2">House Area (m²)</span>
             <input type="range" min="30" max="500" step="10" bind:value={area} class="form-range mt-2" />
@@ -176,7 +182,7 @@
     <div class="col-md-4">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h4 class="card-title mb-4 text-success fw-bold">Climate Data</h4>
+          <h4 class="card-title mb-5 text-success fw-bold">Climate Data</h4>
           <div class="mb-3 d-flex align-items-center">
             <i class="bi bi-thermometer-half text-warning" style="font-size: 1.5rem;"></i>
             <span class="ms-3">Temperature</span>
@@ -200,17 +206,63 @@
         </div>
       </div>
     </div>
-    <!-- House Preview Card -->
-    <div class="col-md-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h4 class="card-title mb-4 text-success fw-bold">House Preview</h4>
-          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" class="img-fluid rounded mb-4" alt="House Preview" />
-          <button class="btn btn-teal w-100 fw-bold" style="background: #16a085; color: white;">
-            Build me a house <i class="bi bi-arrow-right ms-2"></i>
-          </button>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h4 class="card-title mb-5 text-success fw-bold">Best Architecture Suggestion</h4>
+        <div class="d-flex align-items-center mb-3">
+          <i class="bi bi-lightbulb text-info" style="font-size: 1.5rem;"></i>
+          <span class="ms-3">Recommended Design</span>
+        </div>
+        <div class="placeholder-glow mb-2" style="min-height: 3rem;">
+          <!-- Placeholder for future API response -->
+          <span class="placeholder col-12"></span>
+        </div>
+        <div class="text-muted small">
+          The best architectural style for your parameters will appear here.
         </div>
       </div>
     </div>
   </div>
+
+  </div>
 </div>
+ <!-- House Preview Card -->
+<div class="container">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h4 class="card-title mb-4 text-success fw-bold">House Preview</h4>
+
+      {#if imageUrl}
+        <img src={imageUrl} class="img-fluid rounded mb-4" alt="Generated house preview" />
+      {:else if isLoading}
+        <div class="placeholder-glow mb-4" style="height: 300px;">
+          <span class="placeholder col-12" style="height: 100%;"></span>
+        </div>
+      {:else}
+        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1400&q=80"
+          class="img-fluid rounded mb-4"
+          alt="Default house preview" />
+      {/if}
+
+      <button class="btn btn-teal w-100 fw-bold"
+        style="background: #16a085; color: white;"
+        on:click={handleBuildClick}
+        disabled={isLoading}>
+        {isLoading ? 'Generating image...' : 'Build me a house'} <i class="bi bi-arrow-right ms-2"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- <div class="container">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h4 class="card-title mb-4 text-success fw-bold">House Preview</h4>
+        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" class="img-fluid rounded mb-4" alt="House Preview" />
+        <button class="btn btn-teal w-100 fw-bold" style="background: #16a085; color: white;">
+          Build me a house <i class="bi bi-arrow-right ms-2"></i>
+        </button>
+      </div>
+    </div>
+</div> -->
